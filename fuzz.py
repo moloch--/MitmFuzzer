@@ -38,7 +38,7 @@ _fuzz_responses = False
 def fuzz_json(content):
     ''' Fuzz a JSON response '''
     payload = _payloads.popleft()
-    resp = json.loads(flow.response.content)
+    resp = json.loads(content)
 
     # *** Put fuzz here ***
 
