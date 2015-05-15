@@ -57,17 +57,16 @@ def load_payload_dir(folder):
 
 def fuzz_json(content):
     ''' Fuzz a JSON response '''
-    with decoded(flow.response):
-    resp = json.loads(flow.response.content)
     payload = _payloads.popleft()
+    resp = json.loads(flow.response.content)
     # *** Put fuzz here ***
     return json.dumps(resp)
 
 
 def fuzz_xml(content):
     ''' Fuzz an XML response '''
-    root = parseString(content)
     payload = _payloads.popleft()
+    root = parseString(content)
     # *** Put fuzz here ***
     return root.toprettyxml()
 
