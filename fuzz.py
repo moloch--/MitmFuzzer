@@ -60,7 +60,7 @@ def fuzz_json(content):
     with decoded(flow.response):
     resp = json.loads(flow.response.content)
     payload = _payloads.popleft()
-    # Put fuzz here
+    # *** Put fuzz here ***
     return json.dumps(resp)
 
 
@@ -68,7 +68,7 @@ def fuzz_xml(content):
     ''' Fuzz an XML response '''
     root = parseString(content)
     payload = _payloads.popleft()
-    # Put fuzz here
+    # *** Put fuzz here ***
     return root.toprettyxml()
 
 
