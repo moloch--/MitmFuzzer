@@ -35,6 +35,26 @@ _fuzz_requests = False
 _fuzz_responses = False
 
 
+def fuzz_json(content):
+    ''' Fuzz a JSON response '''
+    payload = _payloads.popleft()
+    resp = json.loads(flow.response.content)
+
+    # *** Put fuzz here ***
+
+    return json.dumps(resp)
+
+
+def fuzz_xml(content):
+    ''' Fuzz an XML response '''
+    payload = _payloads.popleft()
+    root = parseString(content)
+
+    # *** Put fuzz here ***
+
+    return root.toprettyxml()
+
+
 def load_payload_file(path):
     ''' Load a file into the payload deque '''
     logging.info("Loading payloads from file: %s" % path)
@@ -53,22 +73,6 @@ def load_payload_dir(folder):
             path = os.path.join(root, name)
             if not os.path.basename(path).startswith('_'):
                 load_payload_file(path)
-
-
-def fuzz_json(content):
-    ''' Fuzz a JSON response '''
-    payload = _payloads.popleft()
-    resp = json.loads(flow.response.content)
-    # *** Put fuzz here ***
-    return json.dumps(resp)
-
-
-def fuzz_xml(content):
-    ''' Fuzz an XML response '''
-    payload = _payloads.popleft()
-    root = parseString(content)
-    # *** Put fuzz here ***
-    return root.toprettyxml()
 
 
 def setup_logging(filename='mitmfuzzer.log', level=logging.DEBUG):
