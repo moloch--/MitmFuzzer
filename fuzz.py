@@ -55,22 +55,21 @@ def load_payload_dir(folder):
                 load_payload_file(path)
 
 
-def fuzz_json(context, flow):
+def fuzz_json(content):
     ''' Fuzz a JSON response '''
     with decoded(flow.response):
-        resp = json.loads(flow.response.content)
-        payload = _payloads.popleft()
-        # Put fuzz here
-        return json.dumps(resp)
+    resp = json.loads(flow.response.content)
+    payload = _payloads.popleft()
+    # Put fuzz here
+    return json.dumps(resp)
 
 
-def fuzz_xml(context, flow):
+def fuzz_xml(content):
     ''' Fuzz an XML response '''
-    with decoded(flow.response):
-        root = parseString(flow.response.content)
-        payload = _payloads.popleft()
-        # Put fuzz here
-        return root.toprettyxml()
+    root = parseString(content)
+    payload = _payloads.popleft()
+    # Put fuzz here
+    return root.toprettyxml()
 
 
 def setup_logging(filename='mitmfuzzer.log', level=logging.DEBUG):
@@ -104,9 +103,11 @@ def response(context, flow):
         logging.debug("Intercepting a response ...")
         if 'Content-type' in flow.response.headers:
             if flow.response.headers['Content-type'][0].lower() in JSON_MIMES:
-                flow.response.content = fuzz_json(context, flow)
+                with decoded(flow.response):
+                    flow.response.content = fuzz_json(flow.response.content)
             elif flow.response.headers['Content-type'][0].lower() in XML_MIMES:
-                flow.response.content = fuzz_xml(context, flow)
+                with decoded(flow.response):
+                    flow.response.content = fuzz_xml(flow.response.content)
             else:
                 logging.debug("No fuzzers for content type '%s', skipping." % (
                     flow.response.headers['Content-type'][0])
@@ -125,9 +126,11 @@ def request(context, flow):
     try:
         if 'Content-type' in flow.request.headers:
             if flow.request.headers['Content-type'][0].lower() in JSON_MIMES:
-                flow.request.content = fuzz_json(context, flow)
+                with decoded(flow.request):
+                    flow.request.content = fuzz_json(flow.request.content)
             elif flow.request.headers['Content-type'][0].lower() in XML_MIMES:
-                flow.request.content = fuzz_xml(context, flow)
+                with decoded(flow.request):
+                    flow.request.content = fuzz_xml(flow.request.content)
             else:
                 logging.debug("No fuzzers for content type '%s', skipping." % (
                     flow.request.headers['Content-type'][0])
