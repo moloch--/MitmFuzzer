@@ -7,4 +7,9 @@ MitmFuzzer for use with [MitmProxy](https://github.com/mitmproxy/mitmproxy)
 
 Usage
 =======
-`mitmproxy -s "fuzz.py ./fuzzdb/"`
+
+#### Fuzz HTTP Repsonses
+`mitmproxy -s "fuzz.py --responses --payloads ./fuzzdb"`
+
+#### Fuzz HTTP Requests
+`mitmproxy -s "fuzz.py --requests --payloads ./fuzzdb"`

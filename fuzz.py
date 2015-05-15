@@ -13,6 +13,7 @@ import logging
 from collections import deque
 from xml.dom.minidom import parseString
 from libmproxy.protocol.http import decoded
+from libmproxy.script import concurrent
 
 
 JSON_MIMES = [
@@ -30,6 +31,8 @@ XML_MIMES = [
 
 
 _payloads = deque()
+_fuzz_requests = False
+_fuzz_responses = False
 
 
 def load_payload_file(path):
@@ -70,24 +73,33 @@ def fuzz_xml(context, flow):
         return root.toprettyxml()
 
 
+def setup_logging(filename='mitmfuzzer.log', level=logging.DEBUG):
+    logging.basicConfig(filename=filename,
+                        format='[%(levelname)s] %(asctime)s - %(message)s',
+                        level=level)
+    logging.info("Starting up ...")
+
+
 def start(context, argv):
     ''' Initial entry point, sets up logging and loads payloads '''
-    logging.basicConfig(filename='mitmfuzz.log',
-                        format='[%(levelname)s] %(asctime)s - %(message)s',
-                        level=logging.DEBUG)
-    logging.info("Starting up ...")
-    if 1 < len(argv) and os.path.exists(argv[1]):
-        logging.info("Loading payload(s) from %s" % argv[1])
-        load_payload_dir(argv[1])
+    setup_logging()
+    _fuzz_requests = True if "--requests" in argv else False
+    _fuzz_responses = True if "--responses" in argv else False
+    payload_dir = argv[argv.index("--payloads") + 1]
+    if os.path.exists(payload_dir):
+        logging.info("Loading payload(s) from %s" % payload_dir)
+        load_payload_dir(payload_dir)
     else:
         logging.error("Fuzzing payload directory '%s' does not exist" % (
-            argv[1]
+            payload_dir
         ))
     logging.info("Loaded %d fuzzing payload(s)" % len(_payloads))
 
 
 def response(context, flow):
     ''' Callback fired upon each response thru the proxy '''
+    if not _fuzz_responses:
+        return
     try:
         logging.debug("Intercepting a response ...")
         if 'Content-type' in flow.response.headers:
@@ -100,6 +112,27 @@ def response(context, flow):
                     flow.response.headers['Content-type'][0])
                 )
         else:
-            logging.debug("No Content-type header in response data")
+            logging.debug("No Content-type header in response")
     except:
-        logging.exception("Callback response threw an exception")
+        logging.exception("Response callback threw an exception")
+
+
+@concurrent
+def request(context, flow):
+    ''' Callback fired upon each request thru the proxy '''
+    if not _fuzz_requests:
+        return
+    try:
+        if 'Content-type' in flow.request.headers:
+            if flow.request.headers['Content-type'][0].lower() in JSON_MIMES:
+                flow.request.content = fuzz_json(context, flow)
+            elif flow.request.headers['Content-type'][0].lower() in XML_MIMES:
+                flow.request.content = fuzz_xml(context, flow)
+            else:
+                logging.debug("No fuzzers for content type '%s', skipping." % (
+                    flow.request.headers['Content-type'][0])
+                )
+        else:
+            logging.debug("No Content-type header in request")
+    except:
+        logging.exception("Request callback threw an exception")
